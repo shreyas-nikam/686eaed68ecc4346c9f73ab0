@@ -1,152 +1,105 @@
+import numpy as np
 import pandas as pd
+
+def simulate_vertex_score(model_name, context_size, few_shot_examples, benchmark_category, task_step):
+    """Simulates vertex_score based on input parameters."""
+
+    # Simulate a base score, making it slightly dependent on model and context
+    base_score = 0.5 + (context_size / 10000) * 0.1  # Context influence
+    if "GPT-4" in model_name:
+        base_score += 0.2  # GPT-4 boost
+    elif "LLaMA" in model_name:
+        base_score += 0.1
+    elif "Mistral" in model_name:
+        base_score += 0.05
+    base_score = max(0, min(base_score, 1))  # Ensure within [0, 1]
+
+    # Adjust score based on few-shot examples
+    few_shot_effect = few_shot_examples * 0.05
+    base_score += few_shot_effect
+    base_score = max(0, min(base_score, 1))
+
+    # Introduce randomness
+    random_variation = np.random.normal(0, 0.05)
+    base_score += random_variation
+    base_score = max(0, min(base_score, 1))
+
+    return float(base_score)
+
+import matplotlib.pyplot as plt
 import numpy as np
 
-def generate_synthetic_workflow_data(num_workflows, max_stages, task_types):
-    """Generates synthetic workflow data."""
-    if not isinstance(task_types, list):
-        raise TypeError("task_types must be a list")
+def generate_trend_plot(model, context_size, few_shot_examples):
+    """Generates a trend plot of VERTEX score vs task step."""
 
-    data = []
-    for i in range(num_workflows):
-        workflow_id = f"workflow_{i+1}"
-        stage_name = f"stage_{i+1}"  # Each workflow has only one stage
-        if task_types:
-            task_type = np.random.choice(task_types)
-        else:
-            task_type = None
+    if model is None:
+        raise Exception("Model cannot be None")
 
-        data.append({
-            'workflow_id': workflow_id,
-            'stage_name': stage_name,
-            'task_type': task_type
-        })
-    df = pd.DataFrame(data)
-    return df
+    num_steps = 10  # Define the number of task steps
 
-import pandas as pd
+    # Generate dummy data for vertex scores (replace with actual model output)
+    vertex_scores = np.random.rand(num_steps)
+    task_steps = np.arange(1, num_steps + 1)
 
-def simulate_symbolicai_workflow(natural_language_task, complexity_level):
-    """Simulates the SymbolicAI workflow execution."""
+    # Create the plot
+    fig, ax = plt.subplots()
+    ax.plot(task_steps, vertex_scores)
 
-    if natural_language_task is None:
-        raise TypeError("Natural language task cannot be None.")
+    # Set labels and title
+    ax.set_xlabel("Task Step")
+    ax.set_ylabel("VERTEX Score")
+    ax.set_title(f"VERTEX Score Trend (Context Size: {context_size}, Few-Shot: {few_shot_examples})")
 
-    data = {'stage': [], 'input': [], 'output': []}
-
-    if natural_language_task:
-        data['stage'] = ['Input', 'Processing', 'Output']
-        data['input'] = [natural_language_task, natural_language_task, natural_language_task]
-        data['output'] = [f'Processed {natural_language_task}', f'Analyzed {natural_language_task}', f'Result {natural_language_task}']
-
-    df = pd.DataFrame(data)
-    return df
-
-import pandas as pd
-import networkx as nx
-import matplotlib.pyplot as plt
-
-def display_workflow_graph(workflow_data):
-    """To visually represent the simulated flow.
-    Args:
-        workflow_data: DataFrame containing workflow data.
-    Output:
-        None (displays a graph).
-    """
-
-    if workflow_data.empty:
-        plt.figure(figsize=(6, 4))
-        plt.text(0.5, 0.5, 'Empty Workflow', ha='center', va='center', fontsize=12)
-        plt.axis('off')
-        plt.show()
-        return
-
-    graph = nx.DiGraph()
-    for index, row in workflow_data.iterrows():
-        stage_name = row['stage_name']
-        input_symbol_type = row['input_symbol_type']
-        output_symbol_type = row['output_symbol_type']
-
-        graph.add_node(stage_name, type='stage')
-        graph.add_node(input_symbol_type, type='symbol')
-        graph.add_node(output_symbol_type, type='symbol')
-
-        graph.add_edge(input_symbol_type, stage_name)
-        graph.add_edge(stage_name, output_symbol_type)
-
-    pos = nx.spring_layout(graph)
-
-    node_colors = ['skyblue' if data['type'] == 'stage' else 'lightgreen' for node, data in graph.nodes(data=True)]
-
-    plt.figure(figsize=(12, 8))
-    nx.draw(graph, pos, with_labels=True, node_size=2000, node_color=node_colors, font_size=10, font_weight='bold', arrowsize=20)
-    plt.title("Workflow Graph", fontsize=16)
-    plt.show()
-
-import pandas as pd
-
-def inspect_node_details(stage_id, workflow_data):
-    """Inspect node details for a given stage."""
-
-    if workflow_data.empty:
-        print("Workflow data is empty.")
-        return
-
-    try:
-        stage_id = str(stage_id)  # Convert stage_id to string for comparison
-        stage_data = workflow_data[workflow_data['stage_id'] == stage_id]
-
-        if stage_data.empty:
-            print(f"No data found for stage ID: {stage_id}")
-            return
-
-        print(f"Details for Stage ID: {stage_id}")
-        for col in stage_data.columns:
-            print(f"{col}: {stage_data[col].iloc[0]}")
-
-    except Exception as e:
-        print(f"An error occurred: {e}")
+    # Return the figure
+    return fig
 
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def display_metrics(metrics_data):
-    """To visualize synthetic metrics, providing insights into simulated performance.
-    Args:
-        metrics_data: A pandas DataFrame containing the metrics data.
-    Output:
-        None (displays the metrics plots).
-    """
-    if metrics_data.empty:
-        print("Metrics data is empty. No plots to display.")
+def generate_benchmark_comparison_plot(data):
+    """Generates a bar chart comparing aggregated VERTEX scores of models across benchmark categories."""
+
+    if not isinstance(data, pd.DataFrame):
+        raise AttributeError("Input must be a Pandas DataFrame.")
+
+    if data.empty:
+        print("Warning: Input DataFrame is empty. No plot will be generated.")
         return
 
-    required_columns = ['processing_time_ms', 'execution_accuracy', 'task_type']
-    for col in required_columns:
-        if col not in metrics_data.columns:
-            raise KeyError(f"Required column '{col}' is missing in the metrics data.")
+    required_columns = ['model_name', 'benchmark_category', 'vertex_score']
+    if not all(col in data.columns for col in required_columns):
+        raise KeyError("DataFrame must contain 'model_name', 'benchmark_category', and 'vertex_score' columns.")
 
-    try:
-        metrics_data['processing_time_ms'] = pd.to_numeric(metrics_data['processing_time_ms'])
-        metrics_data['execution_accuracy'] = pd.to_numeric(metrics_data['execution_accuracy'])
-    except ValueError as e:
-        raise TypeError("processing_time_ms and execution_accuracy must be numeric.") from e
+    aggregated_data = data.groupby(['model_name', 'benchmark_category'])['vertex_score'].mean().unstack()
 
-    # Basic scatter plot of processing time vs. accuracy
-    plt.figure(figsize=(8, 6))
-    plt.scatter(metrics_data['processing_time_ms'], metrics_data['execution_accuracy'])
-    plt.xlabel('Processing Time (ms)')
-    plt.ylabel('Execution Accuracy')
-    plt.title('Processing Time vs. Execution Accuracy')
-    plt.grid(True)
-    plt.show()
-
-    # Bar plot of average processing time per task type
-    avg_processing_time = metrics_data.groupby('task_type')['processing_time_ms'].mean()
-    plt.figure(figsize=(8, 6))
-    avg_processing_time.plot(kind='bar')
-    plt.xlabel('Task Type')
-    plt.ylabel('Average Processing Time (ms)')
-    plt.title('Average Processing Time per Task Type')
-    plt.xticks(rotation=45)
+    ax = aggregated_data.plot(kind='bar', figsize=(10, 6))
+    ax.set_title('Benchmark Comparison')
+    ax.set_xlabel('Benchmark Category')
+    ax.set_ylabel('Average Vertex Score')
+    ax.legend(title='Model')
+    plt.xticks(rotation=45, ha='right')
     plt.tight_layout()
+    plt.show()
+
+import matplotlib.pyplot as plt
+
+def generate_scatter_plot(x_data, y_data, x_label):
+    """Generates a scatter plot."""
+
+    if not all(isinstance(item, (int, float)) for item in x_data) or not all(isinstance(item, (int, float)) for item in y_data):
+        raise TypeError("x_data and y_data must contain numeric values.")
+    
+    if x_data is None or y_data is None or x_label is None:
+        raise TypeError("Arguments cannot be None")
+    
+    if not x_data or not y_data:
+        raise Exception("x_data and y_data cannot be empty.")
+    
+    if len(x_data) != len(y_data):
+        raise Exception("x_data and y_data must have the same length.")
+
+    plt.scatter(x_data, y_data)
+    plt.xlabel(x_label)
+    plt.ylabel("VERTEX Score")
+    plt.title(f"Scatter Plot of VERTEX Score vs {x_label}")
     plt.show()
