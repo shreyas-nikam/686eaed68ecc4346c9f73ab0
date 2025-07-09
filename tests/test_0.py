@@ -1,47 +1,14 @@
 import pytest
-import pandas as pd
-from definition_b56cf18d4e254d969cff48196a7f36f6 import generate_synthetic_workflow_data
+from definition_a11bb9e3e059490f9e5216f4dc6a6c94 import simulate_vertex_score
 
-@pytest.fixture
-def sample_task_types():
-    return ['arithmetic', 'logical', 'query']
-
-def test_generate_synthetic_workflow_data_positive(sample_task_types):
-    num_workflows = 3
-    max_stages = 5
-    df = generate_synthetic_workflow_data(num_workflows, max_stages, sample_task_types)
-    assert isinstance(df, pd.DataFrame)
-    assert len(df) == num_workflows
-    assert 'workflow_id' in df.columns
-    assert 'stage_name' in df.columns
-    assert 'task_type' in df.columns
-
-def test_generate_synthetic_workflow_data_zero_workflows(sample_task_types):
-    num_workflows = 0
-    max_stages = 5
-    df = generate_synthetic_workflow_data(num_workflows, max_stages, sample_task_types)
-    assert isinstance(df, pd.DataFrame)
-    assert len(df) == 0
-
-def test_generate_synthetic_workflow_data_large_numbers(sample_task_types):
-    num_workflows = 2
-    max_stages = 10
-    df = generate_synthetic_workflow_data(num_workflows, max_stages, sample_task_types)
-    assert isinstance(df, pd.DataFrame)
-    assert len(df) == num_workflows
-
-def test_generate_synthetic_workflow_data_invalid_task_types():
-    num_workflows = 1
-    max_stages = 2
-    with pytest.raises(TypeError):
-        generate_synthetic_workflow_data(num_workflows, max_stages, 123)
-
-def test_generate_synthetic_workflow_data_empty_task_types():
-    num_workflows = 1
-    max_stages = 2
-    task_types = []
-    df = generate_synthetic_workflow_data(num_workflows, max_stages, task_types)
-
-    assert isinstance(df, pd.DataFrame)
-    assert len(df) == num_workflows
-    assert all(df['task_type'] == None)
+@pytest.mark.parametrize("model_name, context_size, few_shot_examples, benchmark_category, task_step, expected_type", [
+    ("GPT-4 Turbo", 2048, 5, "Logic", 10, float),
+    ("LLaMA3-Chat", 1024, 2, "Associative Prediction", 5, float),
+    ("Mistral 7B", 4096, 0, "Program Synthesis", 1, float),
+    ("GPT-4 Turbo", 500, 3, None, None, float),
+    ("Invalid Model", 2048, 5, "Logic", 10, float),
+])
+def test_simulate_vertex_score(model_name, context_size, few_shot_examples, benchmark_category, task_step):
+    result = simulate_vertex_score(model_name, context_size, few_shot_examples, benchmark_category, task_step)
+    assert isinstance(result, expected_type)
+    assert 0 <= result <= 1 if isinstance(result, float) else True
