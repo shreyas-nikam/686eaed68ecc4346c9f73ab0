@@ -1,175 +1,149 @@
 import pandas as pd
 import numpy as np
 
-def generate_synthetic_parsing_data(num_samples):
-    """Generates a synthetic dataset of parsing data."""
+def generate_synthetic_data(num_rows):
+    """Generates synthetic LLM performance data."""
 
-    if not isinstance(num_samples, int):
-        raise TypeError("num_samples must be an integer.")
-    if num_samples < 0:
-        raise ValueError("num_samples must be non-negative.")
+    if num_rows < 0:
+        raise ValueError("Number of rows must be non-negative.")
 
-    data = []
-    for _ in range(num_samples):
-        input_length = np.random.randint(5, 20)
-        natural_language_input = " ".join([f"word_{i}" for i in range(input_length)])
-        symbolic_output = f"expression_{np.random.randint(1, 10)}"
-        parsing_success = np.random.choice([True, False])
-        parsing_time_ms = np.random.rand() * 100  # Up to 100 ms
-        complexity_level = np.random.choice(["simple", "medium", "complex"])
+    if num_rows == 0:
+        return pd.DataFrame({
+            'Model': [],
+            'BenchmarkCategory': [],
+            'TaskStep': [],
+            'ContextSize': [],
+            'FewShotExamples': [],
+            'SimulatedMMD2': [],
+            'VERTEXScore': []
+        })
 
-        data.append([natural_language_input, symbolic_output, parsing_success, parsing_time_ms, complexity_level, input_length])
+    models = ['ModelA', 'ModelB', 'ModelC']
+    categories = ['Reasoning', 'Coding', 'Translation']
 
-    df = pd.DataFrame(data, columns=['natural_language_input', 'symbolic_output', 'parsing_success', 'parsing_time_ms', 'complexity_level', 'input_length'])
-    df['parsing_success'] = df['parsing_success'].astype(bool)
-    df['parsing_time_ms'] = df['parsing_time_ms'].astype('float64')
-    df['complexity_level'] = df['complexity_level'].astype('object')
-    df['input_length'] = df['input_length'].astype('int64')
-    return df
-
-import pandas as pd
-import time
-
-def simulate_llm_parsing(user_input_query, selected_complexity, synthetic_data):
-    """Simulates LLM parsing based on input and data."""
-
-    if not isinstance(user_input_query, str):
-        raise TypeError("User input query must be a string.")
-
-    if not isinstance(selected_complexity, str):
-        raise TypeError("Selected complexity must be a string.")
-    
-    start_time = time.time()
-
-    # Exact match
-    match = synthetic_data[
-        (synthetic_data['natural_language_input'] == user_input_query) &
-        (synthetic_data['complexity_level'] == selected_complexity)
-    ]
-
-    if not match.empty:
-        parsed_symbolic_expression = match['symbolic_output'].iloc[0]
-        simulated_parsing_success = match['parsing_success'].iloc[0]
-        simulated_parsing_time_ms = match['parsing_time_ms'].iloc[0]
-    else:
-        # Fallback: find the closest match based on the input query
-        match = synthetic_data[synthetic_data['natural_language_input'] == user_input_query]
-
-        if not match.empty:
-            parsed_symbolic_expression = match['symbolic_output'].iloc[0]
-            simulated_parsing_success = match['parsing_success'].iloc[0]
-            simulated_parsing_time_ms = match['parsing_time_ms'].iloc[0]
-        else:
-             # No match found
-            parsed_symbolic_expression = None
-            simulated_parsing_success = False
-            simulated_parsing_time_ms = 0
-            
-    end_time = time.time()
-    if parsed_symbolic_expression is None and simulated_parsing_success is False and simulated_parsing_time_ms == 0:
-        simulated_parsing_time_ms = (end_time - start_time) * 1000
-        return {
-                'parsed_symbolic_expression': 'No match found',
-                'simulated_parsing_time_ms': simulated_parsing_time_ms,
-                'simulated_parsing_success': False,
-                'computational_graph_data': {}
-            }
-
-
-    end_time = time.time()
-    simulated_parsing_time_ms = (end_time - start_time) * 1000
-
-    return {
-        'parsed_symbolic_expression': parsed_symbolic_expression,
-        'simulated_parsing_time_ms': simulated_parsing_time_ms,
-        'simulated_parsing_success': simulated_parsing_success,
-        'computational_graph_data': {}
+    data = {
+        'Model': np.random.choice(models, num_rows),
+        'BenchmarkCategory': np.random.choice(categories, num_rows),
+        'TaskStep': np.random.randint(1, 11, num_rows),
+        'ContextSize': np.random.choice([128, 256, 512, 1024], num_rows),
+        'FewShotExamples': np.random.choice([0, 1, 5, 10], num_rows),
+        'SimulatedMMD2': np.random.rand(num_rows),
+        'VERTEXScore': np.random.rand(num_rows)
     }
 
-import matplotlib.pyplot as plt
-import networkx as nx
+    df = pd.DataFrame(data)
+    return df
 
-def generate_computational_graph_visualization(graph_data):
-    """To visually represent the simplified computational graph."""
-    if graph_data is None:
-        raise TypeError("Graph data cannot be None.")
+import random
 
-    if not isinstance(graph_data, dict):
-        raise AttributeError("Graph data must be a dictionary.")
+def simulate_vertex_score_single(model_name, context_size, few_shot_examples, task_step, benchmark_category):
+    """Simulates VERTEX score."""
+    # This is a simplified simulation; replace with a more sophisticated model.
+    # The simulation considers model_name, context_size, few_shot_examples, task_step, and benchmark_category.
+    # The task_step introduces a trend (higher score for later steps).
 
-    if not graph_data:
-        return  # Handle empty graph gracefully
+    base_score = 0.5  # A base score
 
-    try:
-        nodes = graph_data.get("nodes")
-        edges = graph_data.get("edges")
+    # Adjust for model name (higher score for "better" models)
+    if "GPT-4 Turbo" in model_name:
+        base_score += 0.2
+    elif "LLaMA3-Chat" in model_name:
+        base_score += 0.1
+    elif "Mistral" in model_name:
+        base_score += 0.05
 
-        if nodes is None or edges is None:
-            raise ValueError("Graph data must contain 'nodes' and 'edges' keys.")
+    # Adjust for context size
+    base_score += context_size / 4096 * 0.05 #Scale context effect
 
-        graph = nx.DiGraph()
+    # Adjust for few-shot examples
+    base_score += few_shot_examples * 0.01 #Scale few shot effect
 
-        if nodes:
-            graph.add_nodes_from(nodes)
-        if edges:
-            graph.add_edges_from(edges)
+    # Adjust for task step (trend)
+    base_score += task_step * 0.02 #Scale Task Step effect
 
-        pos = nx.spring_layout(graph)  # You can choose different layouts
+    # Adjust for benchmark category (slight variation)
+    if benchmark_category == "Logic":
+        base_score -= 0.03
+    elif benchmark_category == "Program Synthesis":
+        base_score += 0.02
 
-        nx.draw(graph, pos, with_labels=True, node_size=1500, node_color="skyblue", font_size=10, font_weight="bold")
-        plt.title("Computational Graph")
-        plt.show()  # Or save the plot: plt.savefig("computational_graph.png")
-    except Exception as e:
-        raise AttributeError(f"Invalid graph data format: {e}")
+
+    # Ensure the score stays within [0, 1]
+    final_score = max(0.0, min(1.0, base_score + random.uniform(-0.1, 0.1)))
+    return float(final_score)
+
+import pandas as pd
+import plotly.express as px
+
+def plot_vertex_trend(simulated_df, selected_model, selected_context, selected_few_shot):
+    """Plots the VERTEX score trend over task steps."""
+
+    filtered_df = simulated_df[
+        (simulated_df['Model'] == selected_model) &
+        (simulated_df['ContextSize'] == selected_context) &
+        (simulated_df['FewShotExamples'] == selected_few_shot)
+    ]
+
+    if filtered_df.empty:
+        return None
+
+    fig = px.line(filtered_df, x='TaskStep', y='VERTEXScore',
+                  title=f'VERTEX Score Trend for {selected_model}, Context: {selected_context}, Few-Shot: {selected_few_shot}')
+    fig.update_layout(xaxis_title='Task Step', yaxis_title='VERTEX Score')
+    return fig
 
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
+import io
+import base64
 
-def plot_parsing_metrics(dataframe_metrics):
-    """To visualize relationships and comparisons of the synthetic parsing metrics.
+def plot_benchmark_comparison(simulated_df):
+    """Compares aggregated VERTEX scores across benchmark categories."""
 
-    Args:
-        dataframe_metrics (DataFrame): The full synthetic dataset.
-
-    Output:
-        Multiple graphical plots (e.g., Matplotlib/Seaborn figures).
-    """
-    if not isinstance(dataframe_metrics, pd.DataFrame):
+    if not isinstance(simulated_df, pd.DataFrame):
         raise TypeError("Input must be a pandas DataFrame.")
 
-    if dataframe_metrics.empty:
-        return
+    if simulated_df.empty:
+        return  # Handle empty DataFrame gracefully (no plot generated)
 
-    required_columns = ['parsing_success', 'parsing_time_ms', 'complexity_level', 'input_length']
+    required_columns = ['Model', 'BenchmarkCategory', 'TaskStep', 'ContextSize', 'FewShotExamples', 'SimulatedMMD2', 'VERTEXScore']
     for col in required_columns:
-        if col not in dataframe_metrics.columns:
-            raise KeyError(f"DataFrame must contain column: {col}")
+        if col not in simulated_df.columns:
+            raise KeyError(f"DataFrame must contain column '{col}'.")
 
-    # Ensure parsing_success is boolean
-    if dataframe_metrics['parsing_success'].dtype != bool:
-        dataframe_metrics['parsing_success'] = dataframe_metrics['parsing_success'].astype(bool)
+    aggregated_data = simulated_df.groupby('BenchmarkCategory')['VERTEXScore'].mean().sort_values()
 
-    # Plot 1: Parsing success rate by complexity level
-    plt.figure(figsize=(8, 6))
-    sns.countplot(x='complexity_level', hue='parsing_success', data=dataframe_metrics)
-    plt.title('Parsing Success Rate by Complexity Level')
-    plt.xlabel('Complexity Level')
-    plt.ylabel('Number of Samples')
-    plt.show()
+    plt.figure(figsize=(10, 6))  # Adjust figure size for better readability
+    aggregated_data.plot(kind='bar', color='skyblue')
+    plt.title('Average VERTEX Score by Benchmark Category')
+    plt.xlabel('Benchmark Category')
+    plt.ylabel('Average VERTEX Score')
+    plt.xticks(rotation=45, ha='right')  # Rotate x-axis labels for readability
+    plt.tight_layout()  # Adjust layout to prevent labels from overlapping
 
-    # Plot 2: Parsing time vs. input length
-    plt.figure(figsize=(8, 6))
-    plt.scatter(dataframe_metrics['input_length'], dataframe_metrics['parsing_time_ms'])
-    plt.title('Parsing Time vs. Input Length')
-    plt.xlabel('Input Length')
-    plt.ylabel('Parsing Time (ms)')
-    plt.show()
+    # Convert plot to PNG image in memory
+    img_buf = io.BytesIO()
+    plt.savefig(img_buf, format='png')
+    img_buf.seek(0)
+    img_data = base64.b64encode(img_buf.read()).decode('utf-8')
+    plt.close()
 
-    # Plot 3: Boxplot of parsing time by complexity level
-    plt.figure(figsize=(8, 6))
-    sns.boxplot(x='complexity_level', y='parsing_time_ms', data=dataframe_metrics)
-    plt.title('Parsing Time by Complexity Level')
-    plt.xlabel('Complexity Level')
-    plt.ylabel('Parsing Time (ms)')
-    plt.show()
+    return # Or optionally return img_data for web display
+
+import pandas as pd
+import matplotlib.pyplot as plt
+
+def plot_performance_scatter(simulated_df, x_axis_param):
+    """Plots the relationship between x_axis_param and VERTEXScore."""
+    try:
+        plt.figure(figsize=(8, 6))
+        plt.scatter(simulated_df[x_axis_param], simulated_df['VERTEXScore'])
+        plt.xlabel(x_axis_param)
+        plt.ylabel('VERTEXScore')
+        plt.title(f'VERTEXScore vs {x_axis_param}')
+        plt.grid(True)
+        plt.show()
+    except KeyError as e:
+        raise KeyError(e)
+    except ValueError as e:
+        raise ValueError(e)
