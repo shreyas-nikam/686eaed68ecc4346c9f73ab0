@@ -1,42 +1,53 @@
 import pytest
 import pandas as pd
-import matplotlib.pyplot as plt
-from definition_7d3cf63fd1644f0ca00680182381ffdf import plot_parsing_metrics
+from definition_67c5c3990e7b4bb9b8da6b0490fd32a4 import plot_benchmark_comparison
 
 @pytest.fixture
 def sample_dataframe():
-    data = {
-        'natural_language_input': ['add 1 and 2', 'is it raining?', 'complex query'],
-        'symbolic_output': ['1 + 2', 'unknown', 'very complex expression'],
-        'parsing_success': [True, False, True],
-        'parsing_time_ms': [10, 50, 150],
-        'complexity_level': ['Simple', 'Medium', 'Complex'],
-        'input_length': [10, 12, 13]
-    }
+    data = {'Model': ['A', 'A', 'B', 'B'],
+            'BenchmarkCategory': ['X', 'Y', 'X', 'Y'],
+            'TaskStep': [1, 2, 1, 2],
+            'ContextSize': [100, 200, 100, 200],
+            'FewShotExamples': [0, 1, 0, 1],
+            'SimulatedMMD2': [0.5, 0.6, 0.4, 0.5],
+            'VERTEXScore': [0.7, 0.8, 0.9, 0.6]}
     return pd.DataFrame(data)
 
-def test_plot_parsing_metrics_runs(sample_dataframe, monkeypatch):
-    monkeypatch.setattr(plt, 'show', lambda: None)
-    plot_parsing_metrics(sample_dataframe)
-
-def test_plot_parsing_metrics_empty_dataframe():
-    df = pd.DataFrame()
+def test_plot_benchmark_comparison_valid_dataframe(sample_dataframe):
     try:
-        plot_parsing_metrics(df)
+        plot_benchmark_comparison(sample_dataframe)
     except Exception as e:
-        assert isinstance(e, (ValueError, TypeError, KeyError))
+        pytest.fail(f"plot_benchmark_comparison raised an exception: {e}")
 
-def test_plot_parsing_metrics_no_display(sample_dataframe, monkeypatch):
-    monkeypatch.delattr(plt, 'show', raising=False)
-    plot_parsing_metrics(sample_dataframe)
-    
-def test_plot_parsing_metrics_invalid_input_type():
+def test_plot_benchmark_comparison_empty_dataframe():
+    empty_df = pd.DataFrame()
+    try:
+        plot_benchmark_comparison(empty_df)
+    except Exception as e:
+        pytest.fail(f"plot_benchmark_comparison raised an exception: {e}")
+
+def test_plot_benchmark_comparison_missing_columns():
+    incomplete_df = pd.DataFrame({'Model': ['A', 'B'], 'VERTEXScore': [0.7, 0.9]})
+    with pytest.raises(KeyError):
+        plot_benchmark_comparison(incomplete_df)
+
+def test_plot_benchmark_comparison_non_dataframe_input():
     with pytest.raises(TypeError):
-        plot_parsing_metrics("not a dataframe")
+        plot_benchmark_comparison("not a dataframe")
 
-def test_plot_parsing_metrics_with_missing_columns(sample_dataframe):
-    df = sample_dataframe.drop(columns=['parsing_time_ms'])
+def test_plot_benchmark_comparison_inf_nan_values():
+    data = {'Model': ['A', 'A'],
+            'BenchmarkCategory': ['X', 'Y'],
+            'TaskStep': [1, 2],
+            'ContextSize': [100, 200],
+            'FewShotExamples': [0, 1],
+            'SimulatedMMD2': [0.5, 0.6],
+            'VERTEXScore': [float('inf'), float('nan')]}
+    inf_nan_df = pd.DataFrame(data)
+
     try:
-        plot_parsing_metrics(df)
+        plot_benchmark_comparison(inf_nan_df)
+    except ValueError as e:
+        assert "cannot convert float infinity to integer" in str(e)
     except Exception as e:
-        assert isinstance(e, KeyError)
+        pytest.fail(f"plot_benchmark_comparison raised an unexpected exception: {e}")
