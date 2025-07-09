@@ -1,14 +1,43 @@
 import pytest
-from definition_a11bb9e3e059490f9e5216f4dc6a6c94 import simulate_vertex_score
+import pandas as pd
+from definition_782c5f58bcb04926a08057cbb79f91fa import generate_synthetic_parsing_data
 
-@pytest.mark.parametrize("model_name, context_size, few_shot_examples, benchmark_category, task_step, expected_type", [
-    ("GPT-4 Turbo", 2048, 5, "Logic", 10, float),
-    ("LLaMA3-Chat", 1024, 2, "Associative Prediction", 5, float),
-    ("Mistral 7B", 4096, 0, "Program Synthesis", 1, float),
-    ("GPT-4 Turbo", 500, 3, None, None, float),
-    ("Invalid Model", 2048, 5, "Logic", 10, float),
-])
-def test_simulate_vertex_score(model_name, context_size, few_shot_examples, benchmark_category, task_step):
-    result = simulate_vertex_score(model_name, context_size, few_shot_examples, benchmark_category, task_step)
-    assert isinstance(result, expected_type)
-    assert 0 <= result <= 1 if isinstance(result, float) else True
+def is_dataframe_and_has_columns(df):
+    if not isinstance(df, pd.DataFrame):
+        return False
+    required_columns = ['natural_language_input', 'symbolic_output', 'parsing_success', 'parsing_time_ms', 'complexity_level', 'input_length']
+    return all(col in df.columns for col in required_columns)
+
+
+def test_generate_synthetic_parsing_data_positive_samples():
+    num_samples = 50
+    df = generate_synthetic_parsing_data(num_samples)
+    assert is_dataframe_and_has_columns(df)
+    assert len(df) == num_samples
+    assert df['parsing_success'].dtype == bool
+    assert df['parsing_time_ms'].dtype == float
+    assert df['input_length'].dtype == int
+    assert all(level in ['Simple', 'Medium', 'Complex', 'Challenging'] for level in df['complexity_level'])
+
+
+def test_generate_synthetic_parsing_data_zero_samples():
+    num_samples = 0
+    df = generate_synthetic_parsing_data(num_samples)
+    assert is_dataframe_and_has_columns(df)
+    assert len(df) == 0
+
+
+def test_generate_synthetic_parsing_data_large_number_of_samples():
+    num_samples = 1000
+    df = generate_synthetic_parsing_data(num_samples)
+    assert is_dataframe_and_has_columns(df)
+    assert len(df) == num_samples
+
+
+def test_generate_synthetic_parsing_data_negative_input():
+    with pytest.raises(ValueError):
+        generate_synthetic_parsing_data(-10)
+
+def test_generate_synthetic_parsing_data_invalid_input_type():
+    with pytest.raises(TypeError):
+        generate_synthetic_parsing_data("invalid")
