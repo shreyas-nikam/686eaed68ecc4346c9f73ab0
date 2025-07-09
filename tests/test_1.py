@@ -1,34 +1,39 @@
 import pytest
-from definition_7dfbfd7b401d4e27924b94b3e74b8dbb import generate_trend_plot
-import matplotlib.pyplot as plt
-from unittest.mock import MagicMock
+from definition_c1a7b64bafa445e88b11cb71a5555abc import simulate_llm_parsing
+import pandas as pd
 
-def test_generate_trend_plot_no_errors():
-    model_mock = MagicMock()
-    try:
-        generate_trend_plot(model_mock, 100, 5)
-    except Exception as e:
-        assert False, f"Unexpected exception: {e}"
+@pytest.fixture
+def synthetic_data():
+    data = {
+        'natural_language_input': ['1 + 1', 'Is John a human?', 'Complex query about multiple entities'],
+        'symbolic_output': ['2', 'True', 'Complex symbolic representation'],
+        'parsing_success': [True, True, False],
+        'parsing_time_ms': [10, 20, 30],
+        'complexity_level': ['Simple', 'Medium', 'Complex'],
+        'input_length': [5, 15, 35]
+    }
+    return pd.DataFrame(data)
 
-def test_generate_trend_plot_context_size_zero():
-    model_mock = MagicMock()
-    try:
-        generate_trend_plot(model_mock, 0, 5)
-    except Exception as e:
-        assert False, f"Unexpected exception: {e}"
+def test_simulate_llm_parsing_simple(synthetic_data):
+    result = simulate_llm_parsing('1 + 1', 'Simple', synthetic_data)
+    assert isinstance(result, dict)
+    assert 'parsed_symbolic_expression' in result
+    assert 'simulated_parsing_time_ms' in result
+    assert 'simulated_parsing_success' in result
+    assert 'computational_graph_data' in result
 
-def test_generate_trend_plot_few_shot_examples_negative():
-    model_mock = MagicMock()
-    try:
-        generate_trend_plot(model_mock, 100, -1)
-    except Exception as e:
-        assert False, f"Unexpected exception: {e}"
+def test_simulate_llm_parsing_no_match(synthetic_data):
+    result = simulate_llm_parsing('Unseen query', 'Simple', synthetic_data)
+    assert isinstance(result, dict)
 
-def test_generate_trend_plot_return_type():
-    model_mock = MagicMock()
-    result = generate_trend_plot(model_mock, 100, 5)
-    assert result is None or isinstance(result, plt.Figure), "Expected None or matplotlib.pyplot.Figure"
+def test_simulate_llm_parsing_complex_failure(synthetic_data):
+    result = simulate_llm_parsing('Complex query about multiple entities', 'Complex', synthetic_data)
+    assert isinstance(result, dict)
 
-def test_generate_trend_plot_with_empty_model():
-    with pytest.raises(Exception):
-      generate_trend_plot(None, 100, 5)
+def test_simulate_llm_parsing_medium_success(synthetic_data):
+    result = simulate_llm_parsing('Is John a human?', 'Medium', synthetic_data)
+    assert isinstance(result, dict)
+
+def test_simulate_llm_parsing_empty_input(synthetic_data):
+    result = simulate_llm_parsing('', 'Simple', synthetic_data)
+    assert isinstance(result, dict)
