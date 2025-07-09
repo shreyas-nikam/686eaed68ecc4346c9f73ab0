@@ -1,46 +1,49 @@
 import pytest
-from definition_9b19aa3eb7df4768bd29134d7e92fe13 import inspect_node_details
-import pandas as pd
+from definition_9da4284ce6e44224a2e495d9509d2693 import generate_scatter_plot
+import matplotlib.pyplot as plt
 
 @pytest.fixture
-def sample_workflow_data():
-    data = {
-        'stage_id': ['1', '2', '3'],
-        'stage_name': ['Parsing', 'Execution', 'Finalize'],
-        'input_symbol_value': ['text', '5 + 3', '8'],
-        'output_symbol_value': ['expression', '8', 'result'],
-        'input_symbol_type': ['string', 'string', 'string'],
-        'output_symbol_type': ['string', 'string', 'string']
-    }
-    return pd.DataFrame(data)
+def sample_data():
+    x_data = [1, 2, 3, 4, 5]
+    y_data = [2, 4, 1, 3, 5]
+    return x_data, y_data
 
-def test_inspect_node_details_valid_stage(sample_workflow_data, capsys):
-    inspect_node_details('2', sample_workflow_data)
-    captured = capsys.readouterr()
-    # Check that no errors are raised and some output is produced. This is a basic check.
-    assert captured.out != ""
-
-def test_inspect_node_details_invalid_stage(sample_workflow_data, capsys):
-    inspect_node_details('4', sample_workflow_data)
-    captured = capsys.readouterr()
-    # Check that no errors are raised and some output is produced. This is a basic check. Functionality may vary based on implementation.
-    assert captured.out != ""
-
-def test_inspect_node_details_empty_dataframe(capsys):
-    empty_df = pd.DataFrame()
-    inspect_node_details('1', empty_df)
-    captured = capsys.readouterr()
-    # Check that no errors are raised and some output is produced. This is a basic check. Functionality may vary based on implementation.
-    assert captured.out != ""
-
-def test_inspect_node_details_none_stage_id(sample_workflow_data, capsys):
-    inspect_node_details(None, sample_workflow_data)
-    captured = capsys.readouterr()
-    # Check that no errors are raised and some output is produced. This is a basic check. Functionality may vary based on implementation.
-    assert captured.out != ""
+def test_generate_scatter_plot_valid_data(sample_data, monkeypatch):
+    x_data, y_data = sample_data
+    x_label = "Test Label"
     
-def test_inspect_node_details_stage_id_as_int(sample_workflow_data, capsys):
-    inspect_node_details(2, sample_workflow_data)
-    captured = capsys.readouterr()
-    # Check that no errors are raised and some output is produced. This is a basic check.
-    assert captured.out != ""
+    def mock_show():
+        pass
+
+    monkeypatch.setattr(plt, "show", mock_show)
+    
+    try:
+        generate_scatter_plot(x_data, y_data, x_label)
+    except Exception as e:
+        pytest.fail(f"Unexpected exception: {e}")
+
+def test_generate_scatter_plot_empty_data():
+    x_data = []
+    y_data = []
+    x_label = "Test Label"
+    with pytest.raises(Exception):
+        generate_scatter_plot(x_data, y_data, x_label)
+
+def test_generate_scatter_plot_mismatched_data_lengths():
+    x_data = [1, 2, 3]
+    y_data = [1, 2]
+    x_label = "Test Label"
+    with pytest.raises(Exception):
+        generate_scatter_plot(x_data, y_data, x_label)
+
+def test_generate_scatter_plot_non_numeric_data():
+    x_data = ['a', 'b', 'c']
+    y_data = [1, 2, 3]
+    x_label = "Test Label"
+    with pytest.raises(TypeError):
+        generate_scatter_plot(x_data, y_data, x_label)
+
+def test_generate_scatter_plot_none_data():
+    with pytest.raises(TypeError):
+         generate_scatter_plot(None, None, None)
+
