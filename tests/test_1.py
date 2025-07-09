@@ -1,39 +1,41 @@
 import pytest
-from definition_c1a7b64bafa445e88b11cb71a5555abc import simulate_llm_parsing
+from definition_75ad61a57597484aab312e1ff47f2759 import simulate_llm_parsing
 import pandas as pd
 
 @pytest.fixture
 def synthetic_data():
     data = {
-        'natural_language_input': ['1 + 1', 'Is John a human?', 'Complex query about multiple entities'],
-        'symbolic_output': ['2', 'True', 'Complex symbolic representation'],
+        'natural_language_input': ["2 + 2", "Is cat?", "complex query"],
+        'symbolic_output': ["4", "True", "ComplexOutput"],
         'parsing_success': [True, True, False],
-        'parsing_time_ms': [10, 20, 30],
+        'parsing_time_ms': [10, 15, 20],
         'complexity_level': ['Simple', 'Medium', 'Complex'],
-        'input_length': [5, 15, 35]
+        'input_length': [5, 8, 13]
     }
     return pd.DataFrame(data)
 
 def test_simulate_llm_parsing_simple(synthetic_data):
-    result = simulate_llm_parsing('1 + 1', 'Simple', synthetic_data)
+    result = simulate_llm_parsing("2 + 2", "Simple", synthetic_data)
     assert isinstance(result, dict)
-    assert 'parsed_symbolic_expression' in result
-    assert 'simulated_parsing_time_ms' in result
-    assert 'simulated_parsing_success' in result
-    assert 'computational_graph_data' in result
+    assert result.get('parsed_symbolic_expression') is not None
 
 def test_simulate_llm_parsing_no_match(synthetic_data):
-    result = simulate_llm_parsing('Unseen query', 'Simple', synthetic_data)
+    result = simulate_llm_parsing("unknown query", "Challenging", synthetic_data)
     assert isinstance(result, dict)
+    assert result.get('parsed_symbolic_expression') is not None  # Should return some default failed message
 
 def test_simulate_llm_parsing_complex_failure(synthetic_data):
-    result = simulate_llm_parsing('Complex query about multiple entities', 'Complex', synthetic_data)
+    result = simulate_llm_parsing("complex query", "Complex", synthetic_data)
     assert isinstance(result, dict)
-
-def test_simulate_llm_parsing_medium_success(synthetic_data):
-    result = simulate_llm_parsing('Is John a human?', 'Medium', synthetic_data)
-    assert isinstance(result, dict)
+    assert result.get('simulated_parsing_success') is not None
+    if result.get('simulated_parsing_success') == False:
+        assert result.get('parsed_symbolic_expression') is not None
 
 def test_simulate_llm_parsing_empty_input(synthetic_data):
-    result = simulate_llm_parsing('', 'Simple', synthetic_data)
+    result = simulate_llm_parsing("", "Simple", synthetic_data)
     assert isinstance(result, dict)
+    assert result.get('parsed_symbolic_expression') is not None
+
+def test_simulate_llm_parsing_invalid_complexity(synthetic_data):
+    with pytest.raises(Exception):  # Or TypeError, depending on how you handle invalid input
+        simulate_llm_parsing("2 + 2", 123, synthetic_data)
