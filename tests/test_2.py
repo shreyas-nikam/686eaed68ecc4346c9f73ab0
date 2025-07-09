@@ -1,42 +1,44 @@
 import pytest
+from definition_343431bfe39f4375a9b1394f927d7a3c import generate_benchmark_comparison_plot
 import pandas as pd
-import networkx as nx
-from definition_43869be16dc94914a893f90a9f1c6c65 import display_workflow_graph
+import matplotlib.pyplot as plt
+from unittest.mock import patch
 
+@pytest.fixture
+def mock_data():
+    data = pd.DataFrame({
+        'model_name': ['ModelA', 'ModelA', 'ModelB', 'ModelB'],
+        'benchmark_category': ['Logic', 'Associative Prediction', 'Logic', 'Associative Prediction'],
+        'vertex_score': [0.8, 0.6, 0.7, 0.9]
+    })
+    return data
 
-def test_display_workflow_graph_empty_dataframe():
-    """Test with an empty DataFrame. Should not raise an error and ideally produce an empty plot."""
-    df = pd.DataFrame()
+def test_generate_benchmark_comparison_plot_valid_data(mock_data):
     try:
-        display_workflow_graph(df)
+        generate_benchmark_comparison_plot(mock_data)
     except Exception as e:
-        assert False, f"display_workflow_graph raised an exception with an empty DataFrame: {e}"
+        pytest.fail(f"Unexpected exception: {e}")
 
-
-def test_display_workflow_graph_basic_flow():
-    """Test with a minimal DataFrame representing a simple workflow."""
-    data = {'stage_name': ['A', 'B', 'C'], 'input_symbol_type': ['int', 'float', 'string'], 'output_symbol_type': ['float', 'string', 'bool']}
-    df = pd.DataFrame(data)
+def test_generate_benchmark_comparison_plot_empty_data():
+    empty_data = pd.DataFrame({'model_name': [], 'benchmark_category': [], 'vertex_score': []})
     try:
-        display_workflow_graph(df)
+        generate_benchmark_comparison_plot(empty_data)
     except Exception as e:
-        assert False, f"display_workflow_graph raised an exception with a basic workflow: {e}"
+        pytest.fail(f"Unexpected exception: {e}")
 
+def test_generate_benchmark_comparison_plot_missing_column():
+    incomplete_data = pd.DataFrame({
+        'model_name': ['ModelA', 'ModelB'],
+        'vertex_score': [0.8, 0.7]
+    })
+    with pytest.raises(KeyError):
+        generate_benchmark_comparison_plot(incomplete_data)
 
-def test_display_workflow_graph_non_sequential_stages():
-    """Test with a DataFrame where the stages are not strictly sequential."""
-    data = {'stage_name': ['A', 'C', 'B'], 'input_symbol_type': ['int', 'float', 'string'], 'output_symbol_type': ['float', 'string', 'bool']}
-    df = pd.DataFrame(data)
-    try:
-        display_workflow_graph(df)
-    except Exception as e:
-        assert False, f"display_workflow_graph raised an exception with non-sequential stages: {e}"
+@patch("matplotlib.pyplot.show")
+def test_generate_benchmark_comparison_plot_calls_show(mock_show, mock_data):
+    generate_benchmark_comparison_plot(mock_data)
+    mock_show.assert_called_once()
 
-def test_display_workflow_graph_duplicate_stage_names():
-    """Test when dataframe has duplicate stage names"""
-    data = {'stage_name': ['A', 'B', 'A'], 'input_symbol_type': ['int', 'float', 'string'], 'output_symbol_type': ['float', 'string', 'bool']}
-    df = pd.DataFrame(data)
-    try:
-        display_workflow_graph(df)
-    except Exception as e:
-        assert False, f"display_workflow_graph raised an exception with duplicate stage names: {e}"
+def test_generate_benchmark_comparison_plot_non_dataframe_input():
+    with pytest.raises(AttributeError):
+        generate_benchmark_comparison_plot([1, 2, 3])
