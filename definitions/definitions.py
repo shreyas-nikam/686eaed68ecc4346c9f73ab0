@@ -2,147 +2,174 @@ import pandas as pd
 import numpy as np
 
 def generate_synthetic_parsing_data(num_samples):
-    """Generates synthetic data for LLM semantic parsing outcomes."""
+    """Generates a synthetic dataset of parsing data."""
+
     if not isinstance(num_samples, int):
         raise TypeError("num_samples must be an integer.")
     if num_samples < 0:
-        raise ValueError("num_samples must be a non-negative integer.")
+        raise ValueError("num_samples must be non-negative.")
 
-    data = {
-        'natural_language_input': [f"Example query {i}" for i in range(num_samples)],
-        'symbolic_output': [f"SELECT ... WHERE ... {i}" for i in range(num_samples)],
-        'parsing_success': np.random.choice([True, False], size=num_samples),
-        'parsing_time_ms': np.random.randint(10, 100, size=num_samples),
-        'complexity_level': np.random.randint(1, 5, size=num_samples),
-        'input_length': [len(f"Example query {i}") for i in range(num_samples)]
-    }
-    df = pd.DataFrame(data)
+    data = []
+    for _ in range(num_samples):
+        input_length = np.random.randint(5, 20)
+        natural_language_input = " ".join([f"word_{i}" for i in range(input_length)])
+        symbolic_output = f"expression_{np.random.randint(1, 10)}"
+        parsing_success = np.random.choice([True, False])
+        parsing_time_ms = np.random.rand() * 100  # Up to 100 ms
+        complexity_level = np.random.choice(["simple", "medium", "complex"])
+
+        data.append([natural_language_input, symbolic_output, parsing_success, parsing_time_ms, complexity_level, input_length])
+
+    df = pd.DataFrame(data, columns=['natural_language_input', 'symbolic_output', 'parsing_success', 'parsing_time_ms', 'complexity_level', 'input_length'])
+    df['parsing_success'] = df['parsing_success'].astype(bool)
+    df['parsing_time_ms'] = df['parsing_time_ms'].astype('float64')
+    df['complexity_level'] = df['complexity_level'].astype('object')
+    df['input_length'] = df['input_length'].astype('int64')
     return df
 
 import pandas as pd
 import time
 
 def simulate_llm_parsing(user_input_query, selected_complexity, synthetic_data):
-    """Simulates LLM parsing based on user input and synthetic data."""
+    """Simulates LLM parsing based on input and data."""
 
+    if not isinstance(user_input_query, str):
+        raise TypeError("User input query must be a string.")
+
+    if not isinstance(selected_complexity, str):
+        raise TypeError("Selected complexity must be a string.")
+    
     start_time = time.time()
+
+    # Exact match
     match = synthetic_data[
         (synthetic_data['natural_language_input'] == user_input_query) &
         (synthetic_data['complexity_level'] == selected_complexity)
     ]
-
-    if not isinstance(selected_complexity, str):
-        raise Exception("Complexity should be a string")
 
     if not match.empty:
         parsed_symbolic_expression = match['symbolic_output'].iloc[0]
         simulated_parsing_success = match['parsing_success'].iloc[0]
         simulated_parsing_time_ms = match['parsing_time_ms'].iloc[0]
     else:
-        # Default behavior when no match is found
-        parsed_symbolic_expression = "No direct match found. Simulated failed parsing."
-        simulated_parsing_success = False
-        simulated_parsing_time_ms = 50  # Default time
+        # Fallback: find the closest match based on the input query
+        match = synthetic_data[synthetic_data['natural_language_input'] == user_input_query]
+
+        if not match.empty:
+            parsed_symbolic_expression = match['symbolic_output'].iloc[0]
+            simulated_parsing_success = match['parsing_success'].iloc[0]
+            simulated_parsing_time_ms = match['parsing_time_ms'].iloc[0]
+        else:
+             # No match found
+            parsed_symbolic_expression = None
+            simulated_parsing_success = False
+            simulated_parsing_time_ms = 0
+            
+    end_time = time.time()
+    if parsed_symbolic_expression is None and simulated_parsing_success is False and simulated_parsing_time_ms == 0:
+        simulated_parsing_time_ms = (end_time - start_time) * 1000
+        return {
+                'parsed_symbolic_expression': 'No match found',
+                'simulated_parsing_time_ms': simulated_parsing_time_ms,
+                'simulated_parsing_success': False,
+                'computational_graph_data': {}
+            }
+
 
     end_time = time.time()
-    elapsed_time_ms = (end_time - start_time) * 1000 #in milliseconds
+    simulated_parsing_time_ms = (end_time - start_time) * 1000
 
-    computational_graph_data = {
-        'nodes': [],
-        'edges': []
-    }
-
-    result = {
+    return {
         'parsed_symbolic_expression': parsed_symbolic_expression,
-        'simulated_parsing_time_ms': elapsed_time_ms,
+        'simulated_parsing_time_ms': simulated_parsing_time_ms,
         'simulated_parsing_success': simulated_parsing_success,
-        'computational_graph_data': computational_graph_data
+        'computational_graph_data': {}
     }
-
-    return result
 
 import matplotlib.pyplot as plt
 import networkx as nx
 
 def generate_computational_graph_visualization(graph_data):
-    """Visualizes a computational graph.
-
-    Args:
-        graph_data (dict/list): Graph data with nodes and edges.
-    """
-
+    """To visually represent the simplified computational graph."""
     if graph_data is None:
-        raise TypeError("graph_data cannot be None")
+        raise TypeError("Graph data cannot be None.")
 
-    if not isinstance(graph_data, (dict, list)):
-        raise TypeError("graph_data must be a dict or list")
+    if not isinstance(graph_data, dict):
+        raise AttributeError("Graph data must be a dictionary.")
 
-    if isinstance(graph_data, dict):
-        nodes = graph_data.get("nodes", [])
-        edges = graph_data.get("edges", [])
-    elif isinstance(graph_data, list):
-        nodes = []
-        edges = []
+    if not graph_data:
+        return  # Handle empty graph gracefully
 
-    graph = nx.DiGraph()
-    graph.add_nodes_from(nodes)
-    graph.add_edges_from(edges)
+    try:
+        nodes = graph_data.get("nodes")
+        edges = graph_data.get("edges")
 
-    pos = nx.spring_layout(graph)  # Layout the graph
+        if nodes is None or edges is None:
+            raise ValueError("Graph data must contain 'nodes' and 'edges' keys.")
 
-    plt.figure(figsize=(8, 6))
-    nx.draw(graph, pos, with_labels=True, node_size=1500, node_color="skyblue", font_size=10, font_weight="bold")
-    plt.title("Computational Graph")
-    plt.show()
+        graph = nx.DiGraph()
+
+        if nodes:
+            graph.add_nodes_from(nodes)
+        if edges:
+            graph.add_edges_from(edges)
+
+        pos = nx.spring_layout(graph)  # You can choose different layouts
+
+        nx.draw(graph, pos, with_labels=True, node_size=1500, node_color="skyblue", font_size=10, font_weight="bold")
+        plt.title("Computational Graph")
+        plt.show()  # Or save the plot: plt.savefig("computational_graph.png")
+    except Exception as e:
+        raise AttributeError(f"Invalid graph data format: {e}")
 
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
 def plot_parsing_metrics(dataframe_metrics):
-    """To visualize parsing metrics."""
+    """To visualize relationships and comparisons of the synthetic parsing metrics.
+
+    Args:
+        dataframe_metrics (DataFrame): The full synthetic dataset.
+
+    Output:
+        Multiple graphical plots (e.g., Matplotlib/Seaborn figures).
+    """
+    if not isinstance(dataframe_metrics, pd.DataFrame):
+        raise TypeError("Input must be a pandas DataFrame.")
 
     if dataframe_metrics.empty:
-        raise ValueError("Cannot plot with an empty DataFrame!")
+        return
 
-    try:
-        # Ensure parsing_success is boolean
+    required_columns = ['parsing_success', 'parsing_time_ms', 'complexity_level', 'input_length']
+    for col in required_columns:
+        if col not in dataframe_metrics.columns:
+            raise KeyError(f"DataFrame must contain column: {col}")
+
+    # Ensure parsing_success is boolean
+    if dataframe_metrics['parsing_success'].dtype != bool:
         dataframe_metrics['parsing_success'] = dataframe_metrics['parsing_success'].astype(bool)
 
-        # Box plot of parsing time by complexity level
-        plt.figure(figsize=(10, 6))
-        sns.boxplot(x='complexity_level', y='parsing_time_ms', data=dataframe_metrics)
-        plt.title('Parsing Time vs. Complexity Level')
-        plt.xlabel('Complexity Level')
-        plt.ylabel('Parsing Time (ms)')
-        plt.xticks(rotation=45)
-        plt.tight_layout()
-        plt.show()
+    # Plot 1: Parsing success rate by complexity level
+    plt.figure(figsize=(8, 6))
+    sns.countplot(x='complexity_level', hue='parsing_success', data=dataframe_metrics)
+    plt.title('Parsing Success Rate by Complexity Level')
+    plt.xlabel('Complexity Level')
+    plt.ylabel('Number of Samples')
+    plt.show()
 
-        # Scatter plot of input length vs. parsing time, colored by parsing success
-        plt.figure(figsize=(10, 6))
-        sns.scatterplot(x='input_length', y='parsing_time_ms', hue='parsing_success', data=dataframe_metrics)
-        plt.title('Input Length vs. Parsing Time (Colored by Success)')
-        plt.xlabel('Input Length')
-        plt.ylabel('Parsing Time (ms)')
-        plt.tight_layout()
-        plt.show()
+    # Plot 2: Parsing time vs. input length
+    plt.figure(figsize=(8, 6))
+    plt.scatter(dataframe_metrics['input_length'], dataframe_metrics['parsing_time_ms'])
+    plt.title('Parsing Time vs. Input Length')
+    plt.xlabel('Input Length')
+    plt.ylabel('Parsing Time (ms)')
+    plt.show()
 
-        # Bar plot of parsing success rate by complexity level
-        success_rate = dataframe_metrics.groupby('complexity_level')['parsing_success'].mean().reset_index()
-        plt.figure(figsize=(10, 6))
-        sns.barplot(x='complexity_level', y='parsing_success', data=success_rate)
-        plt.title('Parsing Success Rate vs. Complexity Level')
-        plt.xlabel('Complexity Level')
-        plt.ylabel('Success Rate')
-        plt.xticks(rotation=45)
-        plt.ylim(0, 1)  # Success rate is between 0 and 1
-        plt.tight_layout()
-        plt.show()
-
-    except KeyError as e:
-        raise KeyError(f"Required column missing: {e}")
-    except ValueError as e:
-        raise ValueError(f"Data type issue: {e}")
-    except Exception as e:
-        raise e
+    # Plot 3: Boxplot of parsing time by complexity level
+    plt.figure(figsize=(8, 6))
+    sns.boxplot(x='complexity_level', y='parsing_time_ms', data=dataframe_metrics)
+    plt.title('Parsing Time by Complexity Level')
+    plt.xlabel('Complexity Level')
+    plt.ylabel('Parsing Time (ms)')
+    plt.show()
