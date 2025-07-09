@@ -1,44 +1,70 @@
 import pytest
-from definition_343431bfe39f4375a9b1394f927d7a3c import generate_benchmark_comparison_plot
-import pandas as pd
-import matplotlib.pyplot as plt
-from unittest.mock import patch
+from definition_b41b8a76bca84b65a6673668fafd0175 import generate_computational_graph_visualization
 
 @pytest.fixture
-def mock_data():
-    data = pd.DataFrame({
-        'model_name': ['ModelA', 'ModelA', 'ModelB', 'ModelB'],
-        'benchmark_category': ['Logic', 'Associative Prediction', 'Logic', 'Associative Prediction'],
-        'vertex_score': [0.8, 0.6, 0.7, 0.9]
-    })
-    return data
+def mock_matplotlib(monkeypatch):
+    class MockFigure:
+        def savefig(self, filename):
+            pass  # Mock saving the figure
 
-def test_generate_benchmark_comparison_plot_valid_data(mock_data):
-    try:
-        generate_benchmark_comparison_plot(mock_data)
-    except Exception as e:
-        pytest.fail(f"Unexpected exception: {e}")
+    class MockPlot:
+        def figure(self, *args, **kwargs):
+            return MockFigure()
 
-def test_generate_benchmark_comparison_plot_empty_data():
-    empty_data = pd.DataFrame({'model_name': [], 'benchmark_category': [], 'vertex_score': []})
-    try:
-        generate_benchmark_comparison_plot(empty_data)
-    except Exception as e:
-        pytest.fail(f"Unexpected exception: {e}")
+        def gca(self, *args, **kwargs):
+            return MockPlot()
 
-def test_generate_benchmark_comparison_plot_missing_column():
-    incomplete_data = pd.DataFrame({
-        'model_name': ['ModelA', 'ModelB'],
-        'vertex_score': [0.8, 0.7]
-    })
-    with pytest.raises(KeyError):
-        generate_benchmark_comparison_plot(incomplete_data)
+        def plot(self, *args, **kwargs):
+            pass
 
-@patch("matplotlib.pyplot.show")
-def test_generate_benchmark_comparison_plot_calls_show(mock_show, mock_data):
-    generate_benchmark_comparison_plot(mock_data)
-    mock_show.assert_called_once()
+        def title(self, *args, **kwargs):
+            pass
 
-def test_generate_benchmark_comparison_plot_non_dataframe_input():
-    with pytest.raises(AttributeError):
-        generate_benchmark_comparison_plot([1, 2, 3])
+        def xlabel(self, *args, **kwargs):
+            pass
+
+        def ylabel(self, *args, **kwargs):
+            pass
+
+        def show(self, *args, **kwargs):
+            pass
+
+    monkeypatch.setattr("matplotlib.pyplot", MockPlot())
+
+
+@pytest.mark.usefixtures("mock_matplotlib")
+class TestGenerateComputationalGraphVisualization:
+
+    def test_empty_graph_data(self):
+        try:
+            generate_computational_graph_visualization({})
+        except Exception as e:
+            assert False, f"Unexpected exception: {e}"
+
+    def test_simple_graph_data(self):
+        graph_data = {"nodes": ["A", "B"], "edges": [("A", "B")]}
+        try:
+            generate_computational_graph_visualization(graph_data)
+        except Exception as e:
+            assert False, f"Unexpected exception: {e}"
+
+    def test_complex_graph_data(self):
+        graph_data = {
+            "nodes": ["A", "B", "C", "D"],
+            "edges": [("A", "B"), ("B", "C"), ("C", "D")],
+        }
+        try:
+            generate_computational_graph_visualization(graph_data)
+        except Exception as e:
+            assert False, f"Unexpected exception: {e}"
+
+    def test_invalid_graph_data_type(self):
+        with pytest.raises(TypeError):
+             generate_computational_graph_visualization("invalid")
+
+    def test_graph_data_with_numerical_nodes(self):
+        graph_data = {"nodes": [1, 2, 3], "edges": [(1, 2), (2, 3)]}
+        try:
+            generate_computational_graph_visualization(graph_data)
+        except Exception as e:
+            assert False, f"Unexpected exception: {e}"
